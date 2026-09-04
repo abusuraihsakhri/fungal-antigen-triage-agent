@@ -293,3 +293,72 @@ def test_cli_help():
     with pytest.raises(SystemExit) as exc:
         main(["bdg", "--help"])
     assert exc.value.code == 0
+
+
+# ─── Input Validation Tests ─────────────────────────────────────────────────
+
+def test_bdg_extreme_high_value():
+    """Test that extremely high BDG values are rejected."""
+    result = interpret_bdg(50000.0)
+    assert "error" in result
+    assert "exceeds plausible" in result["error"]
+
+
+def test_bdg_zero_value():
+    """Test that zero BDG value is handled correctly."""
+    result = interpret_bdg(0.0)
+    assert result["category"] == "NEGATIVE"
+
+
+def test_gm_extreme_high_value():
+    """Test that extremely high GM values are rejected."""
+    result = interpret_gm(150.0, "serum")
+    assert "error" in result
+    assert "exceeds plausible" in result["error"]
+
+
+def test_gm_zero_value():
+    """Test that zero GM value is handled correctly."""
+    result = interpret_gm(0.0, "serum")
+    assert result["category"] == "NEGATIVE"
+
+
+def test_crag_invalid_pressure_negative():
+    """Test that negative CSF pressure is rejected."""
+    result = interpret_crag(True, csf_opening_pressure=-5.0)
+    assert "error" in result
+
+
+def test_crag_extreme_pressure():
+    """Test that extremely high CSF pressure is rejected."""
+    result = interpret_crag(True, csf_opening_pressure=150.0)
+    assert "error" in result
+
+
+def test_crag_normal_pressure():
+    """Test normal CSF pressure doesn't trigger alert."""
+    result = interpret_crag(True, specimen_type="csf", csf_opening_pressure=15.0)
+    assert not any(a["type"] == "ELEVATED_OPENING_PRESSURE" for a in result["alerts"])
+
+
+def test_mannan_negative_values():
+    """Test that negative mannan values are rejected."""
+    result = interpret_mannan(mannan_value=-50.0)
+    assert "error" in result
+
+    result = interpret_mannan(anti_mannan_value=-10.0)
+    assert "error" in result
+
+
+def test_mannan_none_values():
+    """Test that None mannan values are handled correctly."""
+    result = interpret_mannan(mannan_value=None, anti_mannan_value=None)
+    assert result["category"] == "BOTH_NEGATIVE"
+    assert result["clinical_significance"] == "LOW"
+
+
+def test_combined_empty():
+    """Test combined interpretation with no tests."""
+    result = combined_interpretation()
+    assert result["combined_severity"] == "LOW"
+    assert len(result["tests_performed"]) == 0

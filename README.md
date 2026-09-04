@@ -1,6 +1,6 @@
 # Fungal Antigen Triage Agent
 
-> **Domain:** Infectious Disease Surveillance & Microbiology  
+> **Domain:** Infectious Disease Surveillance & Microbiology
 > **Reference Guidelines & Standards:** `CLSI M100, EUCAST & CDC NHSN Clinical Standards`
 
 <div align="center">
@@ -18,7 +18,7 @@
 
 ## 📖 What It Does
 
-**Fungal Antigen Triage Agent** is an advanced analytical and computational platform implementing Galactomannan, Beta-D-Glucan & Cryptococcal Antigen Arbiter.
+**Fungal Antigen Triage Agent** is an advanced analytical and computational platform implementing Galactomannan, Beta-D-Glucan & Cryptococcal Antigen Arbiter. It provides clinical decision support for interpreting fungal biomarker results in the context of invasive fungal infections.
 
 ---
 
@@ -26,113 +26,103 @@
 
 ### 🔬 Analytical Functions
 
-- **`interpret_bdg()`**: Interpret Beta-D-Glucan result.
+- **`interpret_bdg()`**: Interpret Beta-D-Glucan result with false positive awareness
+- **`interpret_gm()`**: Interpret Galactomannan Index result (serum and BAL specimens)
+- **`interpret_crag()`**: Interpret Cryptococcal Antigen test result with disease burden estimation
+- **`interpret_mannan()`**: Interpret Mannan and Anti-mannan antibody results for Candida infection
+- **`assess_pretest_probability()`**: Assess pre-test probability of invasive fungal infection based on host factors
+- **`combined_interpretation()`**: Comprehensive combined interpretation of multiple fungal antigen tests
 
-Args:
-    value_pg_ml: BDG value in pg/mL
-    false_positive_factors: List of known false positive factors present
+### 🛡️ Enterprise Security Features
 
-Returns:
-    Dict with interpretation, clinical significance, and recommendations
-- **`interpret_gm()`**: Interpret Galactomannan Index result.
+- **Zero-PHI Outbound Interceptor:** Active regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers
+- **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation
+- **PHI Redaction:** Automatic redaction of sensitive identifiers in output
 
-Args:
-    index_value: GM optical density index (ODI)
-    specimen_type: 'serum' or 'bal'
-    false_positive_factors: List of known false positive factors
+### 🤖 Multi-Agent Architecture
 
-Returns:
-    Dict with interpretation and clinical guidance
-- **`interpret_crag()`**: Interpret Cryptococcal Antigen test result.
-
-Args:
-    positive: Whether CrAg is positive
-    titer: CrAg titer (e.g., '1:2', '1:128', '1:1024')
-    specimen_type: 'serum' or 'csf'
-    csf_opening_pressure: CSF opening pressure in cmH2O (if CSF specimen)
-
-Returns:
-    Dict with interpretation and clinical guidance
-- **`interpret_mannan()`**: Interpret Mannan and Anti-mannan antibody results for Candida infection.
-
-Args:
-    mannan_value: Mannan antigen value (pg/mL); positive >= 125 pg/mL (Platelia)
-    anti_mannan_value: Anti-mannan antibody value (AU/mL); positive >= 10 AU/mL
-
-Returns:
-    Dict with interpretation
-- **`assess_pretest_probability()`**: Assess pre-test probability of invasive fungal infection based on host factors.
-
-Args:
-    host_factors: Dict with clinical risk factors:
-        - neutropenic: bool (ANC < 500)
-        - hematologic_malignancy: bool
-        - solid_organ_transplant: bool
-        - stem_cell_transplant: bool
-        - prolonged_icu: bool (>7 days)
-        - corticosteroids: bool (prolonged use)
-        - broad_spectrum_antibiotics: bool (>4 days)
-        - central_venous_catheter: bool
-        - total_parenteral_nutrition: bool
-        - abdominal_surgery: bool
-        - candida_colonization: bool
-        - hiv_aids: bool
-        - liver_failure: bool
-
-Returns:
-    Dict with pre-test probability and risk assessment
+- **InvariantQCWorker:** Primary metric threshold monitoring
+- **SafetyEscalationWorker:** Critical safety interlock detection
+- **ProtocolConformanceWorker:** Spec conformance and anomaly detection
+- **SystemSupervisor:** Master orchestrator with consensus building
 
 ---
 
-## 📐 Mathematical Formulation & Logic
+## 💻 Installation
 
-```text
-  fp_risk = "NONE"
-  fp_risk = "HIGH"
-  fp_risk = "MODERATE"
-  if fp_risk == "HIGH":
-  elif fp_risk == "MODERATE":
+```bash
+# Clone the repository
+git clone https://github.com/abusuraihsakhri/fungal-antigen-triage-agent.git
+cd fungal-antigen-triage-agent
+
+# Install dependencies
+pip install fastapi uvicorn pydantic pytest
 ```
 
 ---
 
-## 💻 CLI Quickstart & Usage
+## 🚀 CLI Quickstart & Usage
 
-### 1. Guided Interactive Mode
+### 1. Interpret Beta-D-Glucan
 ```bash
-python cli.py
+python cli.py bdg --value 150.0
+python cli.py bdg --value 150.0 --false-positives hemodialysis iv_immunoglobulin
 ```
 
-### 2. Direct Parameterized Evaluation
+### 2. Interpret Galactomannan
 ```bash
-python cli.py --input data.csv
+python cli.py gm --index 1.5 --specimen serum
+python cli.py gm --index 0.8 --specimen bal
+python cli.py gm --index 1.5 --false-positives piperacillin_tazobactam
+```
+
+### 3. Interpret Cryptococcal Antigen
+```bash
+python cli.py crag --positive --titer 1:128 --specimen serum
+python cli.py crag --positive --specimen csf
+```
+
+### 4. Combined Interpretation
+```bash
+python cli.py combined --bdg 150.0 --gm 1.5
+python cli.py combined --bdg 150.0 --crag-positive --mannan 200.0 --anti-mannan 20.0
 ```
 
 ### Parameter Reference
-- `--interactive`: Launch guided terminal interactive wizard.
-- `--input <path>`: Evaluate input from JSON or CSV specification.
-- `--json`: Output deterministic structured results in JSON format.
-
-### Input Data Schema
-
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `case_id` | Parameter / observation metric | Required |
-| `patient_synthetic_id` | Parameter / observation metric | Required |
-| `metric_primary` | Parameter / observation metric | Required |
-| `metric_secondary` | Parameter / observation metric | Required |
-| `is_stat` | Parameter / observation metric | Required |
-| `status_flag` | Parameter / observation metric | Required |
+- `bdg`: Interpret Beta-D-Glucan
+  - `--value`: BDG value in pg/mL (required)
+  - `--false-positives`: Known false positive factors (optional)
+- `gm`: Interpret Galactomannan
+  - `--index`: GM optical density index (required)
+  - `--specimen`: 'serum' or 'bal' (default: serum)
+  - `--false-positives`: Known false positive factors (optional)
+- `crag`: Interpret Cryptococcal Antigen
+  - `--positive`: Flag indicating positive result
+  - `--titer`: CrAg titer (e.g., '1:128')
+  - `--specimen`: 'serum' or 'csf' (default: serum)
+- `combined`: Combined fungal antigen interpretation
+  - `--bdg`: BDG value in pg/mL
+  - `--gm`: GM index value
+  - `--gm-specimen`: GM specimen type (default: serum)
+  - `--crag-positive`: CrAg positive flag
+  - `--mannan`: Mannan value in pg/mL
+  - `--anti-mannan`: Anti-mannan value in AU/mL
 
 ---
 
-## 🛡️ Security & Enterprise Architecture
+## 🌐 REST API Server
 
-* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
-* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
+### Start the server:
+```bash
+python -m fungal_antigen_triage_agent.cli serve --host 0.0.0.0 --port 8000
+```
+
+### API Endpoints:
+- `GET /health` - Health check
+- `GET /metrics` - Prometheus operational metrics
+- `POST /api/audit` - Submit task for multi-agent evaluation
+- `POST /api/chat` - Air-gapped supervisory chat
+- `GET /api/audit/logs` - Retrieve and verify HMAC audit trail
 
 ---
 
@@ -147,7 +137,7 @@ pytest -v
 Execute high-throughput batch simulation benchmarks:
 
 ```bash
-python simulator.py --tasks 1000 --concurrency 8
+python simulator.py 1000
 ```
 
 ---
@@ -156,5 +146,90 @@ python simulator.py --tasks 1000 --concurrency 8
 
 ```bash
 docker build -t fungal-antigen-triage-agent .
-docker run -p 8000:8000 fungal-antigen-triage-agent
+docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key fungal-antigen-triage-agent
 ```
+
+Or using Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+---
+
+## 📐 Clinical Decision Logic
+
+### Beta-D-Glucan (BDG) Interpretation:
+| Value (pg/mL) | Category | Clinical Significance |
+|---------------|----------|----------------------|
+| < 60 | NEGATIVE | LOW |
+| 60-79.9 | INDETERMINATE | MODERATE |
+| >= 80 | POSITIVE | HIGH |
+
+### Galactomannan (GM) Interpretation:
+| Specimen | Negative | Indeterminate | Positive |
+|----------|----------|---------------|----------|
+| Serum | < 0.5 | 0.5-0.99 | >= 1.0 |
+| BAL | < 0.7 | N/A | >= 0.7 |
+
+### False Positive Factor Awareness:
+The system recognizes and adjusts interpretations for known false positive factors including:
+- Hemodialysis (HIGH risk for BDG)
+- Piperacillin-tazobactam (HIGH risk for GM, MODERATE for BDG)
+- IV immunoglobulin (HIGH risk for BDG)
+- And many more...
+
+---
+
+## 🛡️ Security Configuration
+
+### Environment Variables:
+- `AUDIT_SECRET_KEY`: Secret key for HMAC-SHA256 audit trail (required for production)
+- `MODEL_PROVIDER`: LLM provider selection (mock, ollama, claude, openai)
+
+### Security Best Practices:
+1. Always set `AUDIT_SECRET_KEY` in production environments
+2. The system uses cryptographically random keys as fallback if no key is provided
+3. All outbound data is inspected for PHI before logging
+4. HMAC-SHA256 chained audit trail ensures tamper evidence
+
+---
+
+## 📁 Project Structure
+
+```
+fungal-antigen-triage-agent/
+├── agents/                          # Enterprise multi-agent system
+│   ├── base.py                      # Security, PHI guard, audit trail
+│   ├── models.py                    # Pydantic data models
+│   ├── workers.py                   # Specialized worker agents
+│   ├── supervisor.py                # Master orchestrator
+│   ├── api.py                       # FastAPI REST endpoints
+│   ├── metrics.py                   # Prometheus metrics
+│   ├── llm_factory.py               # LLM provider factory
+│   ├── learning.py                  # Bayesian calibration engine
+│   └── streamer.py                  # WebSocket telemetry
+├── fungal_antigen_triage_agent/     # Clinical mycology package
+│   ├── agents.py                    # Clinical sub-agents
+│   ├── engine.py                    # Clinical decision engine
+│   ├── models.py                    # Clinical data models
+│   ├── cli.py                       # Clinical CLI
+│   └── server.py                    # Clinical FastAPI server
+├── tests/                           # Test suites
+│   ├── test_enrichment.py           # Enrichment module tests
+│   └── test_fungal_antigen_triage_agent.py  # Agent system tests
+├── myco_sentinel.py                 # Core fungal antigen interpretation
+├── cli.py                           # Main CLI entry point
+├── simulator.py                     # High-throughput simulation
+├── enrichment.py                    # Extended domain features
+├── web/index.html                   # Operations console UI
+├── Dockerfile                       # Container definition
+├── docker-compose.yml               # Multi-container orchestration
+└── pyproject.toml                   # Project configuration
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -53,8 +53,13 @@ def interpret_bdg(value_pg_ml: float,
     Returns:
         Dict with interpretation, clinical significance, and recommendations
     """
+    # Input validation
+    if not isinstance(value_pg_ml, (int, float)):
+        return {"error": "BDG value must be a number", "value": str(value_pg_ml)}
     if value_pg_ml < 0:
         return {"error": "BDG value cannot be negative", "value": value_pg_ml}
+    if value_pg_ml > 10000:
+        return {"error": "BDG value exceeds plausible physiological range (>10000 pg/mL)", "value": value_pg_ml}
 
     # Determine category
     if value_pg_ml < 60:
@@ -185,8 +190,13 @@ def interpret_gm(index_value: float,
     Returns:
         Dict with interpretation and clinical guidance
     """
+    # Input validation
+    if not isinstance(index_value, (int, float)):
+        return {"error": "GM index must be a number", "value": str(index_value)}
     if index_value < 0:
         return {"error": "GM index cannot be negative", "value": index_value}
+    if index_value > 100:
+        return {"error": "GM index exceeds plausible range (>100 ODI)", "value": index_value}
 
     specimen_key = specimen_type.lower().strip()
     thresholds = GM_THRESHOLDS.get(specimen_key, GM_THRESHOLDS["serum"])
@@ -301,6 +311,14 @@ def interpret_crag(
     Returns:
         Dict with interpretation and clinical guidance
     """
+    # Input validation
+    if not isinstance(positive, bool):
+        return {"error": "CrAg positive flag must be boolean", "value": str(positive)}
+    if csf_opening_pressure is not None and (not isinstance(csf_opening_pressure, (int, float)) or csf_opening_pressure < 0):
+        return {"error": "CSF opening pressure must be a non-negative number", "value": csf_opening_pressure}
+    if csf_opening_pressure is not None and csf_opening_pressure > 100:
+        return {"error": "CSF opening pressure exceeds plausible range (>100 cmH2O)", "value": csf_opening_pressure}
+
     result = {
         "test": "Cryptococcal Antigen (CrAg)",
         "specimen_type": specimen_type,
@@ -410,6 +428,16 @@ def interpret_mannan(
     Returns:
         Dict with interpretation
     """
+    # Input validation
+    if mannan_value is not None and not isinstance(mannan_value, (int, float)):
+        return {"error": "Mannan value must be a number", "value": str(mannan_value)}
+    if anti_mannan_value is not None and not isinstance(anti_mannan_value, (int, float)):
+        return {"error": "Anti-mannan value must be a number", "value": str(anti_mannan_value)}
+    if mannan_value is not None and mannan_value < 0:
+        return {"error": "Mannan value cannot be negative", "value": mannan_value}
+    if anti_mannan_value is not None and anti_mannan_value < 0:
+        return {"error": "Anti-mannan value cannot be negative", "value": anti_mannan_value}
+
     mannan_positive = mannan_value is not None and mannan_value >= 125
     anti_mannan_positive = anti_mannan_value is not None and anti_mannan_value >= 10
 
