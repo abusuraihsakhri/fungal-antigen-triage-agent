@@ -40,6 +40,15 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate browser application script
         run: node --check web/app.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install browser test runtime
+        run: |
+          npm install --no-save playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Run real-browser Pyodide smoke test
+        run: node web/e2e.cjs
       - name: Verify relative source and app URLs using HTTP
         run: |
           python -m http.server 8765 >/tmp/fungal-http.log 2>&1 &
