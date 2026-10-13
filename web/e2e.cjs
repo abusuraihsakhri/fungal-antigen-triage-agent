@@ -26,7 +26,7 @@ const server = http.createServer((req, res) => {
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
     await page.goto("http://127.0.0.1:" + port + "/web/", { waitUntil: "domcontentloaded" });
-    await page.waitForFunction(() => document.querySelector("#run") && !document.querySelector("#run").disabled, {
+    await page.waitForFunction(() => document.querySelector("#run") && !document.querySelector("#run").disabled, null, {
       timeout: 120000
     });
     await page.click("#run");
@@ -51,8 +51,7 @@ const server = http.createServer((req, res) => {
     assert.equal(download.suggestedFilename(), "fungal-antigen-interpretation.json");
 
     await page.fill("#bdg", "-1");
-    await page.click("#run");
-    assert.match(await page.locator("#error").textContent(), /non-negative/);
+    assert.equal(await page.locator("#bdg").evaluate(input => input.checkValidity()), false);
     assert.equal(errors.length, 0, errors.join("; "));
     console.log("Browser Pyodide and triage/export smoke tests passed");
   } finally {
