@@ -1,40 +1,92 @@
-name: Fungal Antigen Triage Engine CI/CD & Security Verification
-
+name: Test, security checks and Pages
 on:
   push:
-    branches: [ master, main ]
+    branches: [master]
   pull_request:
-    branches: [ master, main ]
+    branches: [master]
+
+permissions:
+  contents: read
 
 jobs:
-  test-and-audit:
+  python-tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
-
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install the actual Python package with test and server extras
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[server,test]"
+      - name: Check all Python files compile
+        run: python -m compileall -q agents fungal_antigen_triage_agent myco_sentinel.py enrichment.py simulator.py
+      - name: Run all pytest suites
+        run: python -m pytest -q
+      - name: Test installed CLI
+        run: |
+          fungal-antigen-triage bdg --value 150
+          fungal-antigen-triage-engine audit --primary 26
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+  web-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate browser application script
+        run: node --check web/app.js
+      - name: Verify relative source and app URLs using HTTP
+        run: |
+          python -m http.server 8765 >/tmp/fungal-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          python - <<'PY'
+          from urllib.request import urlopen
+          import time
+          for _ in range(30):
+              try:
+                  with urlopen("http://127.0.0.1:8765/web/") as r:
+                      html = r.read().decode()
+                  break
+              except OSError:
+                  time.sleep(0.1)
+          else:
+              raise SystemExit("Local static server did not start")
+          assert "app.js" in html and "pyodide.js" in html
+          for path in ("index.html", "web/app.js", "myco_sentinel.py"):
+              with urlopen("http://127.0.0.1:8765/" + path) as r:
+                  assert r.status == 200 and len(r.read()) > 0, path
+          PY
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install fastapi uvicorn pydantic pytest
-
-    - name: Run Pytest Suite
-      run: |
-        pytest -v
-
-    - name: Security SAST & Zero-PHI Audit
-      run: |
-        python -c "
-        from agents.base import PHIGuard, AuditLogger
-        import pytest
-        assert AuditLogger.verify_integrity() is True
-        print('Security & Zero-PHI Audit Passed!')
-        "
+  pages:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [python-tests, web-check]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Stage browser-only files
+        run: |
+          mkdir -p site/web
+          cp index.html site/index.html
+          cp myco_sentinel.py site/myco_sentinel.py
+          cp web/index.html web/app.js site/web/
+          touch site/.nojekyll
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
