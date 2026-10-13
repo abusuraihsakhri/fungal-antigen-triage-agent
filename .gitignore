@@ -23,6 +23,11 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Local secrets
+.env
+.env.*
+!.env.example
+
 # Application outputs
 results.csv
 output.csv
