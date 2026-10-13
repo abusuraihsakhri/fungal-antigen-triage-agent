@@ -72,9 +72,31 @@ jobs:
                   assert r.status == 200 and len(r.read()) > 0, path
           PY
 
+  container-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image and test health endpoint
+        run: |
+          docker build -t fungal-antigen-triage-smoke .
+          docker run --rm -d --name fungal-antigen-triage-smoke \
+            -e AUDIT_SECRET_KEY=ci-ephemeral-do-not-reuse \
+            -p 127.0.0.1:8767:8000 fungal-antigen-triage-smoke
+          trap 'docker stop fungal-antigen-triage-smoke || true' EXIT
+          healthy=0
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8767/health > /tmp/api-health.json; then
+              healthy=1
+              break
+            fi
+            sleep 1
+          done
+          test "$healthy" -eq 1
+          python -c "import json; assert json.load(open('/tmp/api-health.json'))['status'] == 'HEALTHY'"
+
   pages:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [python-tests, web-check]
+    needs: [python-tests, web-check, container-smoke]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -99,3 +121,26 @@ jobs:
       - name: Deploy to Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify published GitHub Pages assets
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python - <<'PY'
+          import os, time
+          from urllib.parse import urljoin
+          from urllib.request import urlopen
+          base = os.environ["PAGE_URL"].rstrip("/") + "/"
+          for resource in ("", "web/", "web/app.js", "myco_sentinel.py"):
+              url = urljoin(base, resource)
+              for attempt in range(20):
+                  try:
+                      with urlopen(url, timeout=15) as response:
+                          body = response.read()
+                          assert response.status == 200 and len(body) > 40
+                      break
+                  except Exception:
+                      if attempt == 19:
+                          raise
+                      time.sleep(3)
+              print("Verified:", url)
+          PY
