@@ -11,6 +11,18 @@ from .agents import MycologyCoordinator
 coordinator = MycologyCoordinator()
 
 
+def parse_csv_boolean(value):
+    """Parse explicit CSV booleans without treating 'false' as true."""
+    if isinstance(value, bool):
+        return value
+    text = str(value or "").strip().lower()
+    if text in ("1", "true", "yes", "y"):
+        return True
+    if text in ("0", "false", "no", "n", ""):
+        return False
+    raise ValueError(f"Invalid Boolean value for is_stat: {value!r}")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="fungal-antigen-triage-agent", description="MycoSentinel: Invasive Fungal Disease Antigen & Biomarker Triager")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -73,7 +85,7 @@ def main(argv=None):
             fieldnames = list(reader.fieldnames or [])
             rows = list(reader)
 
-        out_fields = fieldnames + ["overall_status", "total_alerts", "stat_critical_alerts", "consensus_summary"]
+        out_fields = list(dict.fromkeys(fieldnames + ["overall_status", "total_alerts", "stat_critical_alerts", "consensus_summary"]))
         out_rows = []
         for r in rows:
             case = ClinicalCasePayload(
@@ -82,7 +94,7 @@ def main(argv=None):
                 primary_metric=float(r.get("metric_primary", r.get("primary_metric", 15.0))),
                 secondary_metric=float(r.get("metric_secondary", r.get("secondary_metric", 5.0))),
                 status_flag=r.get("status_flag", r.get("status_text", "NORMAL")),
-                is_stat=bool(r.get("is_stat", r.get("critical_flag", False))),
+                is_stat=parse_csv_boolean(r.get("is_stat", r.get("critical_flag", False))),
             )
             dossier = coordinator.process_case(case)
             row_dict = dict(r)
@@ -107,6 +119,9 @@ def main(argv=None):
             if app:
                 print(f"Starting MycoSentinel: Invasive Fungal Disease Antigen & Biomarker Triager on http://{args.host}:{args.port}")
                 uvicorn.run(app, host=args.host, port=args.port)
+            else:
+                print("FastAPI is not installed. Install the 'server' extra.", file=sys.stderr)
+                return 1
         except ImportError:
             print("FastAPI / uvicorn not installed. Run 'pip install fastapi uvicorn'")
             return 1

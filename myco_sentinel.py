@@ -16,6 +16,8 @@ Uses only Python stdlib.
 import argparse
 import csv
 import json
+import math
+import re
 import sys
 from typing import Dict, List, Optional, Any
 
@@ -54,8 +56,10 @@ def interpret_bdg(value_pg_ml: float,
         Dict with interpretation, clinical significance, and recommendations
     """
     # Input validation
-    if not isinstance(value_pg_ml, (int, float)):
+    if isinstance(value_pg_ml, bool) or not isinstance(value_pg_ml, (int, float)):
         return {"error": "BDG value must be a number", "value": str(value_pg_ml)}
+    if not math.isfinite(value_pg_ml):
+        return {"error": "BDG value must be finite"}
     if value_pg_ml < 0:
         return {"error": "BDG value cannot be negative", "value": value_pg_ml}
     if value_pg_ml > 10000:
@@ -88,7 +92,7 @@ def interpret_bdg(value_pg_ml: float,
         for factor in false_positive_factors:
             factor_key = factor.lower().replace(" ", "_").replace("-", "_")
             for known_factor, info in BDG_FALSE_POSITIVE_FACTORS.items():
-                if known_factor in factor_key or factor_key in known_factor:
+                if factor_key == known_factor:
                     fp_present.append({
                         "factor": factor,
                         "risk": info["risk"],
@@ -191,15 +195,19 @@ def interpret_gm(index_value: float,
         Dict with interpretation and clinical guidance
     """
     # Input validation
-    if not isinstance(index_value, (int, float)):
+    if isinstance(index_value, bool) or not isinstance(index_value, (int, float)):
         return {"error": "GM index must be a number", "value": str(index_value)}
+    if not math.isfinite(index_value):
+        return {"error": "GM index must be finite"}
     if index_value < 0:
         return {"error": "GM index cannot be negative", "value": index_value}
     if index_value > 100:
         return {"error": "GM index exceeds plausible range (>100 ODI)", "value": index_value}
 
+    if not isinstance(specimen_type, str) or specimen_type.lower().strip() not in GM_THRESHOLDS:
+        return {"error": "GM specimen must be serum or bal"}
     specimen_key = specimen_type.lower().strip()
-    thresholds = GM_THRESHOLDS.get(specimen_key, GM_THRESHOLDS["serum"])
+    thresholds = GM_THRESHOLDS[specimen_key]
 
     # Determine category
     if specimen_key == "bal":
@@ -231,7 +239,7 @@ def interpret_gm(index_value: float,
             label = "Positive"
             significance = "HIGH"
             interpretation = ("Serum GM positive (>=1.0). Strongly suggests invasive aspergillosis. "
-                            "Initiate antifungal therapy and pursue CT imaging.")
+                            "Assess alongside host factors, imaging, and confirmatory testing.")
 
     # Check false positive factors
     fp_present = []
@@ -240,7 +248,7 @@ def interpret_gm(index_value: float,
         for factor in false_positive_factors:
             factor_key = factor.lower().replace(" ", "_").replace("-", "_")
             for known_factor, info in GM_FALSE_POSITIVE_FACTORS.items():
-                if known_factor in factor_key or factor_key in known_factor:
+                if factor_key == known_factor:
                     fp_present.append({
                         "factor": factor,
                         "risk": info["risk"],
@@ -278,7 +286,7 @@ def interpret_gm(index_value: float,
             "type": "GM_POSITIVE",
             "message": f"GM positive ({index_value}) in {specimen_key}",
             "recommendation": "Evaluate for invasive aspergillosis. CT chest recommended. "
-                            "Initiate antifungal therapy per IDSA aspergillosis guidelines.",
+                            "Discuss treatment with a specialist after clinical assessment.",
         })
     elif category == "INDETERMINATE":
         alerts.append({
@@ -314,10 +322,15 @@ def interpret_crag(
     # Input validation
     if not isinstance(positive, bool):
         return {"error": "CrAg positive flag must be boolean", "value": str(positive)}
-    if csf_opening_pressure is not None and (not isinstance(csf_opening_pressure, (int, float)) or csf_opening_pressure < 0):
+    if csf_opening_pressure is not None and (isinstance(csf_opening_pressure, bool) or not isinstance(csf_opening_pressure, (int, float)) or not math.isfinite(csf_opening_pressure) or csf_opening_pressure < 0):
         return {"error": "CSF opening pressure must be a non-negative number", "value": csf_opening_pressure}
     if csf_opening_pressure is not None and csf_opening_pressure > 100:
         return {"error": "CSF opening pressure exceeds plausible range (>100 cmH2O)", "value": csf_opening_pressure}
+
+    if not isinstance(specimen_type, str) or specimen_type.lower() not in ("serum", "csf"):
+        return {"error": "CrAg specimen must be serum or csf"}
+    if titer is not None and (not isinstance(titer, str) or not re.fullmatch(r"1[:/][1-9][0-9]*", titer.strip())):
+        return {"error": "CrAg titer must use the form 1:128"}
 
     result = {
         "test": "Cryptococcal Antigen (CrAg)",
@@ -367,9 +380,9 @@ def interpret_crag(
     # Clinical significance based on specimen type
     if specimen_type.lower() == "csf":
         significance = "CRITICAL"
-        interpretation = ("CrAg positive in CSF confirms cryptococcal meningitis. "
-                        "Requires urgent treatment with amphotericin B + flucytosine "
-                        "induction therapy. Monitor and manage intracranial pressure.")
+        interpretation = ("CrAg positive in CSF is highly concerning for cryptococcal meningitis. "
+                        "Urgent specialist evaluation for induction therapy and intracranial "
+                        "pressure management is indicated.")
     else:
         significance = "HIGH"
         interpretation = ("Serum CrAg positive. Suggests cryptococcal infection. "
@@ -384,8 +397,8 @@ def interpret_crag(
                 "severity": "CRITICAL",
                 "type": "ELEVATED_OPENING_PRESSURE",
                 "message": f"Elevated CSF opening pressure ({csf_opening_pressure} cmH2O)",
-                "recommendation": "Therapeutic lumbar puncture to reduce pressure. "
-                                "Serial LPs may be needed. Consider acetazolamide.",
+                "recommendation": "Urgent specialist evaluation for therapeutic lumbar puncture "
+                                "and serial intracranial pressure management.",
             }
 
     result.update({
@@ -429,10 +442,10 @@ def interpret_mannan(
         Dict with interpretation
     """
     # Input validation
-    if mannan_value is not None and not isinstance(mannan_value, (int, float)):
-        return {"error": "Mannan value must be a number", "value": str(mannan_value)}
-    if anti_mannan_value is not None and not isinstance(anti_mannan_value, (int, float)):
-        return {"error": "Anti-mannan value must be a number", "value": str(anti_mannan_value)}
+    if mannan_value is not None and (isinstance(mannan_value, bool) or not isinstance(mannan_value, (int, float)) or not math.isfinite(mannan_value)):
+        return {"error": "Mannan value must be a finite number"}
+    if anti_mannan_value is not None and (isinstance(anti_mannan_value, bool) or not isinstance(anti_mannan_value, (int, float)) or not math.isfinite(anti_mannan_value)):
+        return {"error": "Anti-mannan value must be a finite number"}
     if mannan_value is not None and mannan_value < 0:
         return {"error": "Mannan value cannot be negative", "value": mannan_value}
     if anti_mannan_value is not None and anti_mannan_value < 0:
@@ -550,9 +563,8 @@ def assess_pretest_probability(
     if risk_score >= 8:
         risk_category = "HIGH"
         probability = "HIGH"
-        recommendation = ("High pre-test probability for invasive fungal infection. "
-                        "Consider empiric antifungal therapy. Order BDG and GM testing. "
-                        "Consider CT imaging.")
+        recommendation = ("High score on an illustrative, unvalidated host-factor index. "
+                        "Use clinical assessment and validated diagnostic pathways.")
     elif risk_score >= 4:
         risk_category = "MODERATE"
         probability = "MODERATE"
@@ -651,6 +663,14 @@ def combined_interpretation(
         results["individual_results"]["Mannan"] = mannan_result
         results["alerts"].extend(mannan_result.get("alerts", []))
 
+    # Do not turn an invalid measurement into a reassuring LOW classification.
+    errors = {name: value["error"] for name, value in results["individual_results"].items() if "error" in value}
+    if errors:
+        results["error"] = errors
+        results["combined_severity"] = "INVALID_INPUT"
+        results["combined_interpretation"] = "Invalid input; no combined interpretation was performed."
+        return results
+
     # Combined algorithm
     positive_tests = []
     for test_name, test_result in results["individual_results"].items():
@@ -661,8 +681,8 @@ def combined_interpretation(
     if len(positive_tests) >= 2:
         results["combined_interpretation"] = (
             f"Multiple positive fungal markers ({', '.join(positive_tests)}). "
-            "High likelihood of invasive fungal infection. Initiate antifungal therapy "
-            "and pursue definitive diagnostics."
+            "These results increase concern but do not establish a diagnosis. "
+            "Obtain specialist review and definitive diagnostics."
         )
         results["combined_severity"] = "HIGH"
     elif len(positive_tests) == 1:
@@ -674,9 +694,9 @@ def combined_interpretation(
         results["combined_severity"] = "MODERATE"
     else:
         results["combined_interpretation"] = (
-            "All fungal markers negative or indeterminate. Invasive fungal infection "
-            "unlikely in current testing. If clinical suspicion remains, repeat testing "
-            "in 48-72 hours."
+            "No assays supplied; no conclusion can be drawn." if not results["tests_performed"]
+            else "No positive markers among supplied tests. Negative or indeterminate results "
+                 "do not exclude invasive fungal infection; interpret in clinical context."
         )
         results["combined_severity"] = "LOW"
 

@@ -1,27 +1,36 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "fungal-antigen-triage-engine"
-version = "2.0.0"
-description = "MycoSentinel: Invasive Fungal Disease Antigen & Biomarker Triager"
+version = "2.0.1"
+description = "Fungal biomarker interpretation and illustrative triage workflows"
 readme = "README.md"
-authors = [{ name = "Dr. Abu Suraih Sakhri", email = "abusuraih@example.com" }]
-license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "Dr. Abu Suraih Sakhri" }]
+license = "MIT"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-requires-python = ">=3.9"
-dependencies = []
+dependencies = ["pydantic>=2,<3"]
+
+[project.optional-dependencies]
+server = ["fastapi>=0.110,<1", "uvicorn>=0.30,<1"]
+test = ["pytest>=8,<10", "httpx>=0.27,<1"]
 
 [project.scripts]
+fungal-antigen-triage = "myco_sentinel:main"
 fungal-antigen-triage-engine = "fungal_antigen_triage_agent.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/abusuraihsakhri/fungal-antigen-triage-engine"
-Repository = "https://github.com/abusuraihsakhri/fungal-antigen-triage-engine.git"
+Homepage = "https://github.com/abusuraihsakhri/fungal-antigen-triage-agent"
+Repository = "https://github.com/abusuraihsakhri/fungal-antigen-triage-agent"
+
+[tool.setuptools]
+py-modules = ["myco_sentinel", "enrichment", "simulator"]
+
+[tool.setuptools.packages.find]
+include = ["agents*", "fungal_antigen_triage_agent*"]
