@@ -1,236 +1,97 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fungal Antigen Triage Engine — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Local, browser-based fungal antigen interpretation for education and research.">
+  <title>Fungal Antigen Triage | MycoSentinel</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1220; --panel:#152235; --text:#f0f5fc; --muted:#b3c1d2; --line:#34455c; --blue:#7ab6ff; --focus:#f7c766; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+    main { max-width:1150px; margin:auto; padding:24px 18px 48px; }
+    header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+    h1 { margin:0; font-size:clamp(1.5rem,3vw,2.1rem); letter-spacing:-.025em; }
+    h2 { margin:0 0 16px; font-size:1.13rem; }
+    p { margin:6px 0; }
+    .eyebrow { color:var(--blue); font-weight:700; font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; }
+    .subtle,.hint { color:var(--muted); }
+    .notice { background:#202b39; border-left:4px solid var(--focus); border-radius:6px; padding:12px 16px; margin:16px 0 22px; }
+    .layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px; min-width:0; }
+    .fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .field { min-width:0; }
+    label { display:block; font-weight:600; margin-bottom:5px; }
+    input[type=number],select { width:100%; background:#091523; color:var(--text); border:1px solid #6b7f9a; border-radius:7px; padding:11px; font:inherit; }
+    input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible { outline:3px solid var(--focus); outline-offset:2px; }
+    fieldset { border:1px solid var(--line); border-radius:9px; margin:16px 0; padding:10px 14px; }
+    legend { padding:0 5px; font-weight:700; }
+    .checks { display:flex; gap:14px; flex-wrap:wrap; }
+    .check { display:flex; gap:8px; align-items:center; font-weight:400; margin:0; }
+    .check input { accent-color:#7ab6ff; width:17px; height:17px; }
+    button { background:#3377d4; color:white; border:1px solid #72afff; border-radius:7px; padding:10px 16px; font:inherit; font-weight:700; cursor:pointer; }
+    button.secondary { background:transparent; }
+    button:disabled { opacity:.6; cursor:wait; }
+    .buttons { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+    #status { color:var(--muted); font-size:.91rem; }
+    #summary { min-height:3rem; }
+    #error { color:#ffb3b3; white-space:pre-wrap; }
+    pre { background:#08111e; color:#dbf0ff; border:1px solid var(--line); padding:16px; border-radius:8px; overflow:auto; max-height:570px; font:13px/1.48 ui-monospace,SFMono-Regular,Consolas,monospace; white-space:pre-wrap; overflow-wrap:anywhere; }
+    footer { color:var(--muted); margin-top:24px; font-size:.86rem; }
+    a { color:#9acbff; }
+    @media(max-width:850px) { .layout { grid-template-columns:1fr; } }
+    @media(max-width:440px) { .fields { grid-template-columns:1fr; } .panel { padding:16px; } }
+  </style>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js" defer></script>
+  <script src="./app.js" defer></script>
 </head>
 <body>
-
-    <div class="header">
-        <div class="header-title">
-            <h1>Fungal Antigen Triage Engine</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
+  <main>
+    <header>
+      <div><div class="eyebrow">MycoSentinel / Research utility</div><h1>Fungal Antigen Triage</h1><p class="subtle">BDG · Galactomannan · CrAg · Mannan / anti-mannan</p></div>
+      <div id="status" role="status" aria-live="polite">Loading Python runtime…</div>
+    </header>
+    <div class="notice" role="note"><strong>Not validated for clinical decisions.</strong> This is an educational, rule-based implementation, not a diagnostic device. Thresholds and interpretations depend on assay, specimen, patient population, and local protocols. Never enter identifiable patient data.</div>
+    <div class="layout">
+      <section class="panel" aria-labelledby="input-title">
+        <h2 id="input-title">Assay inputs</h2>
+        <form id="triage-form">
+          <div class="field"><label for="mode">Interpretation</label><select id="mode"><option value="combined">Combined interpretation</option><option value="bdg">Beta-D-glucan only</option><option value="gm">Galactomannan only</option><option value="crag">Cryptococcal antigen only</option><option value="mannan">Mannan / anti-mannan only</option></select></div>
+          <div class="fields" style="margin-top:14px">
+            <div class="field"><label for="bdg">Beta-D-glucan (pg/mL)</label><input id="bdg" type="number" min="0" step="any" value="150" inputmode="decimal"></div>
+            <div class="field"><label for="gm">Galactomannan (ODI)</label><input id="gm" type="number" min="0" step="any" value="1.5" inputmode="decimal"></div>
+            <div class="field"><label for="specimen">GM specimen</label><select id="specimen"><option value="serum">Serum</option><option value="bal">Bronchoalveolar lavage (BAL)</option></select></div>
+            <div class="field"><label for="titer">CrAg titer (optional)</label><select id="titer"><option value="">Not available</option><option>1:4</option><option>1:32</option><option>1:128</option><option>1:512</option><option>1:1024</option></select></div>
+            <div class="field"><label for="mannan">Mannan (pg/mL)</label><input id="mannan" type="number" min="0" step="any" placeholder="Not tested" inputmode="decimal"></div>
+            <div class="field"><label for="anti-mannan">Anti-mannan (AU/mL)</label><input id="anti-mannan" type="number" min="0" step="any" placeholder="Not tested" inputmode="decimal"></div>
+          </div>
+          <fieldset><legend>Cryptococcal antigen</legend><div class="checks">
+            <label class="check"><input id="crag-tested" type="checkbox">CrAg tested</label>
+            <label class="check"><input id="crag-positive" type="checkbox">Positive result</label>
+            <label class="check" for="crag-specimen">Specimen</label><select id="crag-specimen" style="width:auto"><option value="serum">Serum</option><option value="csf">CSF</option></select>
+          </div></fieldset>
+          <fieldset><legend>Illustrative host factors (optional)</legend><div class="checks">
+            <label class="check"><input id="neutropenic" type="checkbox">Neutropenia</label>
+            <label class="check"><input id="hematologic_malignancy" type="checkbox">Hematologic malignancy</label>
+            <label class="check"><input id="prolonged_icu" type="checkbox">Prolonged ICU stay</label>
+            <label class="check"><input id="corticosteroids" type="checkbox">Corticosteroids</label>
+          </div><p class="hint">Host-factor scores are illustrative, not calibrated probabilities.</p></fieldset>
+          <button id="run" type="submit" disabled>Run interpretation</button>
+        </form>
+      </section>
+      <section class="panel" aria-labelledby="output-title">
+        <h2 id="output-title">Interpretation</h2>
+        <p id="summary" aria-live="polite">The Python interpreter is loading; no interpretation has been performed.</p>
+        <p id="error" role="alert"></p>
+        <pre id="output" aria-label="Full structured result">No results yet.</pre>
+        <div class="buttons">
+          <button type="button" id="copy" class="secondary" disabled>Copy JSON</button>
+          <button type="button" id="download" class="secondary" disabled>Download JSON</button>
         </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
-        </div>
+        <p class="hint">Calculations run in your browser using the repository's Python code. No case data is transmitted to a triage server.</p>
+      </section>
     </div>
-
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Fungal Antigen Triage Engine Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
-
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
-
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
-
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "fungal-antigen-triage-engine",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
+    <footer>Pyodide loads from a third-party CDN; initial internet access is required. Source: <a href="https://github.com/abusuraihsakhri/fungal-antigen-triage-agent">GitHub repository</a>. <span>Rules are non-validated demonstrations, not clinical guidelines.</span></footer>
+  </main>
 </body>
 </html>
